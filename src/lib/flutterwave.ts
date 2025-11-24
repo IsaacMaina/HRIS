@@ -1,10 +1,28 @@
-import Flutterwave from 'flutterwave-node-v3';
+// Initialize Flutterwave with environment variables only when needed
+let flutterwaveInstance: any = null;
+let initialized = false;
 
-// Initialize Flutterwave with environment variables
-const flutterwave = new Flutterwave(
-  process.env.FLUTTERWAVE_PUBLIC_KEY || '',
-  process.env.FLUTTERWAVE_SECRET_KEY || ''
-);
+const initializeFlutterwave = async () => {
+  if (initialized) return flutterwaveInstance;
+
+  const publicKey = process.env.FLUTTERWAVE_PUBLIC_KEY;
+  const secretKey = process.env.FLUTTERWAVE_SECRET_KEY;
+
+  if (publicKey && secretKey) {
+    try {
+      const FlutterwaveModule = await import('flutterwave-node-v3');
+      const Flutterwave = FlutterwaveModule.default || FlutterwaveModule;
+      flutterwaveInstance = new Flutterwave(publicKey, secretKey);
+      initialized = true;
+    } catch (error) {
+      console.error('Error initializing Flutterwave:', error);
+    }
+  } else {
+    console.warn('Flutterwave keys not configured. Payment functionality will not work.');
+  }
+
+  return flutterwaveInstance;
+};
 
 /**
  * Process bank transfer payment via Flutterwave
@@ -23,6 +41,11 @@ export async function processBankTransfer(
   beneficiaryName: string
 ) {
   try {
+    const flutterwave = await initializeFlutterwave();
+    if (!flutterwave) {
+      throw new Error('Flutterwave not configured. Payment processing unavailable.');
+    }
+
     const payload = {
       account_number: accountNumber,
       amount: amount,
@@ -50,6 +73,11 @@ export async function processBankTransfer(
  */
 export async function verifyPayment(reference: string) {
   try {
+    const flutterwave = await initializeFlutterwave();
+    if (!flutterwave) {
+      throw new Error('Flutterwave not configured. Payment verification unavailable.');
+    }
+
     // Check payment status using Flutterwave's payment verification
     const response = await flutterwave.Transaction.verify({ id: reference });
     return response;

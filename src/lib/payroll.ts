@@ -78,8 +78,8 @@ export async function processPayrollPayment(
 
       // Handle different possible response structures from Flutterwave SDK
       const responseData = response.data || response.body?.data || response;
-      transactionId = responseData.id;
-      payoutRef = responseData.reference || responseData.id || responseData.flwRef; // Use reference if available, otherwise transaction ID
+      transactionId = responseData?.id;
+      payoutRef = responseData?.reference || responseData?.id || responseData?.flwRef; // Use reference if available, otherwise transaction ID
     } else if (employeePayment.paymentMethod === 'mpesa') {
       if (!employeePayment.phone) {
         throw new Error(`Phone number required for M-Pesa payment`);
@@ -264,12 +264,19 @@ export async function verifyPayrollPayment(payoutRef: string) {
         status = 'FAILED';
       }
     } else {
-      verification = await verifyPayment(payout.transactionId!);
-      const verificationData = verification.data || verification.body?.data || verification;
-      if (verificationData.status === 'success') {
-        status = 'SUCCESS';
-      } else if (verificationData.status === 'failed') {
-        status = 'FAILED';
+      try {
+        verification = await verifyPayment(payout.transactionId!);
+        const verificationData = verification.data || verification.body?.data || verification;
+        if (verificationData?.status === 'success') {
+          status = 'SUCCESS';
+        } else if (verificationData?.status === 'failed') {
+          status = 'FAILED';
+        } else {
+          status = 'PENDING'; // Default to pending if status is unclear
+        }
+      } catch (error) {
+        console.error('Error verifying Flutterwave payment:', error);
+        status = 'FAILED'; // Mark as failed if verification fails
       }
     }
 

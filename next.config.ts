@@ -3,15 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  experimental: {
-    serverComponentsExternalPackages: [
-      '@prisma/client',
-      'bcryptjs',
-      'jspdf',
-      'jspdf-autotable',
-      'xlsx'
-    ],
-  },
+  serverExternalPackages: [
+    '@prisma/client',
+    'bcryptjs',
+    'jspdf',
+    'jspdf-autotable',
+    'xlsx'
+  ],
   typescript: {
     ignoreBuildErrors: true,
   },
