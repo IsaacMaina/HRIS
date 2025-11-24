@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   experimental: {
-    serverExternalPackages: [
+    serverComponentsExternalPackages: [
       '@prisma/client',
       'bcryptjs',
       'jspdf',
@@ -12,15 +12,12 @@ const nextConfig: NextConfig = {
       'xlsx'
     ],
   },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-      };
-    }
-    return config;
+  // Turbopack configuration
+  compiler: {
+    // Empty compiler config to make Turbopack work properly
   },
+  // Only use webpack for specific builds if needed
+  // Turbopack will be used by default for development
 };
 
 export default nextConfig;
