@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String         @id @default(cuid())
+  email              String         @unique
+  name               String?
+  role               Role           @default(EMPLOYEE)
+  createdAt          DateTime       @default(now())
+  employeeId         String?        @unique @db.VarChar(25)
+  password           String?
+  emailNotifications Boolean        @default(true)
+  smsNotifications   Boolean        @default(false)
+  accounts           Account[]
+  employee           Employee?
+  notifications      Notification[]
+  sessions           Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Employee {
+  id         String         @id @default(cuid())
+  userId     String         @unique
+  staffNo    String?        @unique
+  position   String?
+  department String?
+  salary     Float
+  nhifRate   Float?
+  nssfRate   Float?
+  bankId     String?
+  bankAccNo  String?
+  createdAt  DateTime       @default(now())
+  phone      String?
+  activities Activity[]
+  documents  Document[]
+  bank       Bank?          @relation(fields: [bankId], references: [id])
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaves     LeaveRequest[]
+  payslips   Payslip[]
+  payouts    Payout[]       // Added relation for payouts
+}
+
+model Bank {
+  id       String     @id @default(cuid())
+  name     String
+  code     String?
+  accounts Employee[]
+}
+
+model LeaveRequest {
+  id         String      @id @default(cuid())
+  employeeId String
+  type       LeaveType
+  startDate  DateTime
+  endDate    DateTime
+  status     LeaveStatus @default(PENDING)
+  appliedAt  DateTime    @default(now())
+  reason     String?
+  employee   Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model Payslip {
+  id          String   @id @default(cuid())
+  employeeId  String
+  month       DateTime
+  grossSalary Float
+  deductions  Json
+  netPay      Float
+  fileUrl     String?
+  paid        Boolean  @default(false)
+  payoutRef   String?
+  createdAt   DateTime @default(now())
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  employeeId String
+  filename   String
+  path       String
+  createdAt  DateTime @default(now())
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  title       String
+  message     String
+  type        String
+  recipientId String
+  details     Json?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  recipient   User     @relation(fields: [recipientId], references: [id])
+}
+
+model Payout {
+  id            String   @id @default(cuid())
+  ref           String   @unique  // Reference number for the payout
+  employeeId    String
+  amount        Float
+  status        String   @default("PENDING")  // PENDING, SUCCESS, FAILED
+  type          String   // e.g., "SALARY", "BONUS", etc.
+  bank          String   // Bank name or "M-Pesa" for mobile payments
+  transactionId String?  // Flutterwave transaction ID
+  createdAt     DateTime @default(now())
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  employeeId  String
+  actionType  String
+  description String
+  module      String
+  timestamp   DateTime @default(now())
+  details     Json?
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  ADMIN
+  HR
+  EMPLOYEE
+  FINANCE
+  REPORT
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  UNPAID
+  MATERNITY
+  PATERNITY
+  COMPASSIONATE
+  EMERGENCY
+  STUDY
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

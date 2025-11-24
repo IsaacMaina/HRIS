@@ -1,0 +1,50 @@
+--- a/src/app/api/notifications/[id]/read/route.ts
++++ b/src/app/api/notifications/[id]/read/route.ts
+@@ -1,9 +1,9 @@
+-import { NextResponse } from 'next/server';
++import { NextRequest, NextResponse } from 'next/server';
+ import { prisma } from '@/lib/prisma';
+ import { getServerSession } from 'next-auth';
+ import { authOptions } from '@/lib/authconfig';
+ 
+ // PATCH /api/notifications/:id/read - Mark one as read
+-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
++export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+   try {
+     const session = await getServerSession(authOptions);
+ 
+@@ -14,8 +14,8 @@
+ 
+     const notification = await prisma.notification.update({
+       where: { id, recipientId: session.user.id },
+-      data: { isRead: true },
++      data: { read: true },
+     });
+ 
+     if (!notification) {
+--- a/src/app/api/notifications/read-all/route.ts
++++ b/src/app/api/notifications/read-all/route.ts
+@@ -1,9 +1,9 @@
+-import { NextResponse } from 'next/server';
++import { NextRequest, NextResponse } from 'next/server';
+ import { prisma } from '@/lib/prisma';
+ import { getServerSession } from 'next-auth';
+ import { authOptions } from '@/lib/authconfig';
+ 
+ // PATCH /api/notifications/read-all - Mark all as read
+-export async function PATCH(req: Request) {
++export async function PATCH(req: NextRequest) {
+   try {
+     const session = await getServerSession(authOptions);
+ 
+@@ -12,8 +12,8 @@
+     }
+ 
+     await prisma.notification.updateMany({
+-      where: { recipientId: session.user.id, isRead: false },
+-      data: { isRead: true },
++      where: { recipientId: session.user.id, read: false },
++      data: { read: true },
+     });
+ 
+     return NextResponse.json({ message: 'All notifications marked as read' }, { status: 200 });
