@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authconfig';
 import { prisma } from '../../../lib/prisma';
+
+// Disable static generation for this page since it accesses the database
+export const dynamic = 'force-dynamic';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {

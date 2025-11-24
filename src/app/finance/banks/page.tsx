@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { prisma } from '../../../lib/prisma';
+
+// Disable static generation for this page since it accesses the database
+export const dynamic = 'force-dynamic';
 import AddNewBankModal from '../../../components/finance/AddNewBankModal';
 
 interface BankWithEmployeeCount {

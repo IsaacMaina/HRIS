@@ -34,127 +34,157 @@ async function getDashboardData(): Promise<{
   departments: DepartmentStat[],
   payrollTrend: PayrollTrend[],
   leaveTypeCounts: LeaveTypeCount[]
-}> {
-  // Get employee statistics
-  const totalEmployees = await prisma.employee.count();
-  const totalDepartments = await prisma.employee.groupBy({
-    by: ['department'],
-    where: {
-      department: { not: null }
-    },
-  }).then(result => new Set(result.map(item => item.department)).size);
+} | null> {
+  try {
+    // Get employee statistics
+    const totalEmployees = await prisma.employee.count();
+    const totalDepartments = await prisma.employee.groupBy({
+      by: ['department'],
+      where: {
+        department: { not: null }
+      },
+    }).then(result => new Set(result.map(item => item.department)).size);
 
-  const totalPendingLeaves = await prisma.leaveRequest.count({
-    where: { status: 'PENDING' }
-  });
+    const totalPendingLeaves = await prisma.leaveRequest.count({
+      where: { status: 'PENDING' }
+    });
 
-  // Calculate monthly payroll (for current month)
-  const monthlyPayroll = await prisma.payslip.aggregate({
-    where: {
-      month: {
-        gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-        lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
-      }
-    },
-    _sum: {
-      netPay: true
-    }
-  }).then(result => result._sum.netPay || 0);
-
-  // Get department statistics
-  const departmentStats = await prisma.employee.groupBy({
-    by: ['department'],
-    where: {
-      department: { not: null }
-    },
-    _count: {
-      id: true,
-    },
-    _sum: {
-      salary: true,
-    },
-    orderBy: {
-      _count: {
-        id: 'desc'
-      }
-    }
-  }).then(async (deptResults) => {
-    const departments: DepartmentStat[] = [];
-
-    for (const dept of deptResults) {
-      if (!dept.department) continue;
-
-      const avgSalary = dept._sum.salary ? dept._sum.salary / dept._count.id : 0;
-
-      departments.push({
-        id: `dept-${dept.department.toLowerCase().replace(/\s+/g, '-')}`,
-        name: dept.department,
-        employeeCount: dept._count.id,
-        avgSalary: avgSalary,
-        totalPayroll: dept._sum.salary || 0
-      });
-    }
-
-    return departments;
-  });
-
-  // Get payroll trend for the last 6 months
-  const payrollTrend: PayrollTrend[] = [];
-  const currentMonth = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const month = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - i, 1);
-    const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - i + 1, 1);
-
+    // Calculate monthly payroll (for current month)
     const monthlyPayroll = await prisma.payslip.aggregate({
       where: {
         month: {
-          gte: month,
-          lt: nextMonth,
+          gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+          lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
         }
       },
       _sum: {
         netPay: true
       }
+    }).then(result => result._sum.netPay || 0);
+
+    // Get department statistics
+    const departmentStats = await prisma.employee.groupBy({
+      by: ['department'],
+      where: {
+        department: { not: null }
+      },
+      _count: {
+        id: true,
+      },
+      _sum: {
+        salary: true,
+      },
+      orderBy: {
+        _count: {
+          id: 'desc'
+        }
+      }
+    }).then(async (deptResults) => {
+      const departments: DepartmentStat[] = [];
+
+      for (const dept of deptResults) {
+        if (!dept.department) continue;
+
+        const avgSalary = dept._sum.salary ? dept._sum.salary / dept._count.id : 0;
+
+        departments.push({
+          id: `dept-${dept.department.toLowerCase().replace(/\s+/g, '-')}`,
+          name: dept.department,
+          employeeCount: dept._count.id,
+          avgSalary: avgSalary,
+          totalPayroll: dept._sum.salary || 0
+        });
+      }
+
+      return departments;
     });
 
-    payrollTrend.push({
-      period: month.toLocaleString('default', { month: 'short' }),
-      month: month.getMonth(),
-      year: month.getFullYear(),
-      totalPayroll: Number(monthlyPayroll._sum.netPay || 0)
-    });
-  }
+    // Get payroll trend for the last 6 months
+    const payrollTrend: PayrollTrend[] = [];
+    const currentMonth = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const month = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - i, 1);
+      const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - i + 1, 1);
 
-  // Get leave request counts by type
-  const rawLeaveTypeCounts = await prisma.leaveRequest.groupBy({
-    by: ['type'],
-    _count: {
-      _all: true
+      const monthlyPayroll = await prisma.payslip.aggregate({
+        where: {
+          month: {
+            gte: month,
+            lt: nextMonth,
+          }
+        },
+        _sum: {
+          netPay: true
+        }
+      });
+
+      payrollTrend.push({
+        period: month.toLocaleString('default', { month: 'short' }),
+        month: month.getMonth(),
+        year: month.getFullYear(),
+        totalPayroll: Number(monthlyPayroll._sum.netPay || 0)
+      });
     }
-  });
 
-  const leaveTypeCounts = rawLeaveTypeCounts
-    .filter(result => result.type !== null)  // Filter out null types after grouping
-    .map(result => ({
-      type: result.type || 'Unknown',
-      count: result._count._all
-    }));
+    // Get leave request counts by type
+    const rawLeaveTypeCounts = await prisma.leaveRequest.groupBy({
+      by: ['type'],
+      _count: {
+        _all: true
+      }
+    });
 
-  return {
-    stats: {
-      totalEmployees,
-      totalDepartments,
-      totalPendingLeaves,
-      monthlyPayroll: Number(monthlyPayroll),
-    },
-    departments: departmentStats,
-    payrollTrend,
-    leaveTypeCounts
-  };
+    const leaveTypeCounts = rawLeaveTypeCounts
+      .filter(result => result.type !== null)  // Filter out null types after grouping
+      .map(result => ({
+        type: result.type || 'Unknown',
+        count: result._count._all
+      }));
+
+    return {
+      stats: {
+        totalEmployees,
+        totalDepartments,
+        totalPendingLeaves,
+        monthlyPayroll: Number(monthlyPayroll),
+      },
+      departments: departmentStats,
+      payrollTrend,
+      leaveTypeCounts
+    };
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error);
+    // Return default empty data during build time when DB is not available
+    return {
+      stats: {
+        totalEmployees: 0,
+        totalDepartments: 0,
+        totalPendingLeaves: 0,
+        monthlyPayroll: 0,
+      },
+      departments: [],
+      payrollTrend: [],
+      leaveTypeCounts: []
+    };
+  }
 }
 
+// Disable static generation for this page since it accesses the database
+export const dynamic = 'force-dynamic';
+
 export default async function AnalyticsDashboard() {
-  const { stats, departments, payrollTrend, leaveTypeCounts } = await getDashboardData();
+  const data = await getDashboardData();
+  const { stats, departments, payrollTrend, leaveTypeCounts } = data || {
+    stats: {
+      totalEmployees: 0,
+      totalDepartments: 0,
+      totalPendingLeaves: 0,
+      monthlyPayroll: 0,
+    },
+    departments: [],
+    payrollTrend: [],
+    leaveTypeCounts: []
+  };
 
   // Calculate percentage changes (using previous month as reference)
   // Note: These are simplified calculations - in a real app, you'd fetch actual historical data

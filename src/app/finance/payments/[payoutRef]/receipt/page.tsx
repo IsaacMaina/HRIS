@@ -1,4 +1,7 @@
 import { prisma } from '../../../../../lib/prisma';
+
+// Disable static generation for this page since it accesses the database
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import PrintButton from './PrintButton';

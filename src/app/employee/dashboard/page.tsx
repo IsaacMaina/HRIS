@@ -5,6 +5,9 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 
+// Disable static generation for this page since it accesses the database
+export const dynamic = 'force-dynamic';
+
 interface Activity {
   id: string;
   actionType: string;
