@@ -13,56 +13,51 @@ import {
 
 export default function SocialFooter() {
   return (
-    <footer className="w-full bg-[#004B2E] text-[#FCF8E3] py-8 mt-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-center md:items-start space-y-8 md:space-y-0">
+    <footer className="w-full bg-gradient-to-br from-[#004B2E] to-[#006837] text-[#FCF8E3] py-12 mt-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Logo and copyright */}
-          <div className="flex flex-col items-center md:items-start space-y-2">
+          <div className="flex flex-col items-center md:items-start">
             <Link
               href="/"
-              className="text-2xl font-bold text-[#D4AF37] rounded-md px-2 py-1 hover:bg-[#FCF8E3]/20 hover:text-[#D4AF37] transition-colors duration-200"
+              className="text-2xl font-bold text-[#D4AF37] rounded-md px-2 py-1 hover:bg-[#FCF8E3]/20 hover:text-[#D4AF37] transition-colors duration-200 mb-4"
             >
               University HRIS
             </Link>
-            <p className="text-sm text-[#FCF8E3]">
+            <p className="text-sm text-[#FCF8E3] text-center md:text-left">
               &copy; {new Date().getFullYear()} Kaimosi Friends University. All rights reserved.
             </p>
           </div>
 
           {/* Quick navigation links */}
-          <div className="flex flex-col items-center md:items-start space-y-2">
-            <h3 className="text-lg font-semibold text-[#D4AF37]">Quick Links</h3>
-            <div className="flex flex-col items-center justify-center space-y-2">
+          <div className="flex flex-col items-center md:items-center">
+            <h3 className="text-lg font-semibold text-[#D4AF37] mb-4">Quick Links</h3>
+            <div className="flex flex-col items-center space-y-2">
               <Link
                 href="/about"
-                className="text-[#FCF8E3] border border-[#D4AF37] rounded-md px-2 py-1 hover:bg-[#FCF8E3] hover:text-[#004B2E] transition-colors duration-200"
+                className="text-[#FCF8E3] hover:text-[#D4AF37] transition-colors duration-200 border-b border-transparent hover:border-[#D4AF37] pb-1"
               >
                 About
               </Link>
               <Link
                 href="/contact"
-                className="text-[#FCF8E3] border border-[#D4AF37] rounded-md px-2 py-1 hover:bg-[#FCF8E3] hover:text-[#004B2E] transition-colors duration-200"
+                className="text-[#FCF8E3] hover:text-[#D4AF37] transition-colors duration-200 border-b border-transparent hover:border-[#D4AF37] pb-1"
               >
                 Contact
               </Link>
               <Link
                 href="/privacy"
-                className="text-[#FCF8E3] border border-[#D4AF37] rounded-md px-2 py-1 hover:bg-[#FCF8E3] hover:text-[#004B2E] transition-colors duration-200"
+                className="text-[#FCF8E3] hover:text-[#D4AF37] transition-colors duration-200 border-b border-transparent hover:border-[#D4AF37] pb-1"
               >
-                Privacy
+                Privacy Policy
               </Link>
             </div>
           </div>
 
-          {/* Social media links */}
-          <div className="flex flex-col items-center md:items-start space-y-2">
-            <h3 className="text-lg font-semibold text-[#D4AF37]">Connect With Us</h3>
-            <div className="flex flex-col space-y-2 bg-[#006837]/20 h-full m-2 rounded-2xl p-2 ">
-              <span className="text-[#FCF8E3] font-semibold text-center">
-                Social Links
-              </span>
-              <hr className="w-full border-[#D4AF37]" />
-
+          {/* Social media links - now displayed in a row on desktop and column on mobile */}
+          <div className="flex flex-col items-center md:items-end">
+            <h3 className="text-lg font-semibold text-[#D4AF37] mb-4">Connect With Us</h3>
+            <div className="flex flex-wrap justify-center md:justify-end gap-3">
               {[
                 {
                   href: "https://web.facebook.com/profile.php?id=61576682944507",
@@ -72,7 +67,7 @@ export default function SocialFooter() {
                 {
                   href: "https://x.com/DevIsaacMaina",
                   icon: <X size={24} />,
-                  label: "Twitter (X)",
+                  label: "Twitter",
                 },
                 {
                   href: "https://www.instagram.com/devisaacmaina",
@@ -94,34 +89,65 @@ export default function SocialFooter() {
                   icon: <MessageCircle size={24} />,
                   label: "WhatsApp",
                 },
+              ].map(({ href, icon, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#FCF8E3] hover:text-[#D4AF37] transition-colors duration-200 hover:scale-110"
+                  aria-label={label}
+                >
+                  {icon}
+                </a>
+              ))}
+            </div>
+
+            {/* Contact info in a separate row */}
+            <div className="flex flex-wrap justify-center md:justify-end gap-4 mt-4">
+              {[
                 {
                   href: "mailto:mainaisaacwachira2000@gmail.com",
-                  icon: <Mail size={24} />,
+                  icon: <Mail size={18} />,
                   label: "Email",
                 },
                 {
-                  href: "sms:+254758302725",
-                  icon: <MessageSquare size={24} />,
-                  label: "SMS",
-                },
-                {
                   href: "tel:+254758302725",
-                  icon: <Phone size={24} />,
+                  icon: <Phone size={18} />,
                   label: "Phone",
                 },
               ].map(({ href, icon, label }) => (
                 <a
-                  key={href}
+                  key={label}
                   href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#FCF8E3] rounded-md px-2 py-1 flex items-center space-x-2 hover:bg-[#FCF8E3] hover:text-[#004B2E] transition-colors duration-200"
+                  className="text-[#FCF8E3] hover:text-[#D4AF37] text-sm flex items-center space-x-1 transition-colors duration-200"
                 >
                   {icon}
                   <span>{label}</span>
                 </a>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Divider line */}
+        <div className="border-t border-[#D4AF37]/30 my-8"></div>
+
+        {/* Bottom section with additional info */}
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <p className="text-xs text-[#FCF8E3]/70 mb-4 md:mb-0">
+            Designed with ❤️ for Kaimosi Friends University
+          </p>
+          <div className="flex space-x-6">
+            <Link href="/terms" className="text-xs text-[#FCF8E3]/70 hover:text-[#D4AF37] transition-colors">
+              Terms
+            </Link>
+            <Link href="/help" className="text-xs text-[#FCF8E3]/70 hover:text-[#D4AF37] transition-colors">
+              Help Center
+            </Link>
+            <Link href="/support" className="text-xs text-[#FCF8E3]/70 hover:text-[#D4AF37] transition-colors">
+              Support
+            </Link>
           </div>
         </div>
       </div>
