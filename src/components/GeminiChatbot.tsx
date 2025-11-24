@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, use } from 'react';
 import { useSession } from 'next-auth/react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -237,7 +239,24 @@ const GeminiChatbot = () => {
                 <div className={`
                   ${textSize === 'sm' ? 'text-sm' :
                     textSize === 'lg' ? 'text-lg' : 'text-base'}
-                `}>{message.content}</div>
+                `}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      // Customize how different markdown elements are rendered
+                      p: ({node, ...props}) => <p {...props} className="mb-2" />,
+                      strong: ({node, ...props}) => <strong {...props} className="font-bold" />,
+                      em: ({node, ...props}) => <em {...props} className="italic" />,
+                      ul: ({node, ...props}) => <ul {...props} className="list-disc list-inside mb-2" />,
+                      ol: ({node, ...props}) => <ol {...props} className="list-decimal list-inside mb-2" />,
+                      li: ({node, ...props}) => <li {...props} className="ml-4" />,
+                      code: ({node, ...props}) => <code {...props} className="bg-gray-100 px-1 rounded" />,
+                      pre: ({node, ...props}) => <pre {...props} className="bg-gray-100 p-2 rounded my-2 overflow-x-auto" />,
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
                 <div className={`
                   mt-1 ${message.role === 'user' ? 'text-green-100' : 'text-gray-500'}
                   ${textSize === 'sm' ? 'text-xs' :
