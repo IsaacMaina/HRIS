@@ -1,19 +1,56 @@
-import { getServerSession } from 'next-auth/next';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { authOptions } from '@/lib/authconfig';
-import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: "Employee Functions - University HRIS",
-  description: "Access employee self-service functions like leave requests, payslips, and document uploads",
-};
+export default function EmployeeFunctions() {
+  const { data: session, status } = useSession();
 
-export default async function EmployeeFunctions() {
-  const session = await getServerSession(authOptions);
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
+    }
+  }, [status]);
 
-  if (!session || !session.user || (session.user.role !== 'EMPLOYEE' && session.user.role !== 'ADMIN' && session.user.role !== 'HR')) {
-    redirect('/auth/login');
+  if (status === 'unauthenticated') {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/login';
+    }
+    return null;
+  }
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FCF8E3]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006837] mx-auto"></div>
+          <p className="mt-4 text-[#080808]">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user has employee or higher role
+  if (session?.user?.role !== 'EMPLOYEE' && session?.user?.role !== 'ADMIN' && session?.user?.role !== 'HR') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FCF8E3]">
+        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md text-center border border-[#E5E5E5]">
+          <h1 className="text-2xl font-bold text-[#004B2E] mb-2">Access Denied</h1>
+          <p className="text-[#080808] mb-6">
+            You don't have permission to access employee functions.
+          </p>
+          <Link
+            href="/"
+            className="inline-flex items-center px-4 py-2 border border-[#006837] text-sm font-medium rounded-md shadow-sm text-[#006837] bg-white hover:bg-[#006837] hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#006837]"
+          >
+            Go to Home
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
