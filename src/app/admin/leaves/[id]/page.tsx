@@ -56,7 +56,7 @@ export default function AdminLeaveDetail() {
     fetchLeaveRequest();
   }, [id]);
 
-  const handleUpdateStatus = async (newStatus: 'approved' | 'rejected') => {
+  const handleUpdateStatus = async (newStatus: 'approved' | 'rejected' | 'pending') => {
     if (!leaveRequest) return;
 
     setIsUpdatingStatus(true);
@@ -117,9 +117,12 @@ export default function AdminLeaveDetail() {
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900">Leave Request Details</h1>
-            <Link href="/admin/leaves" className="text-blue-600 hover:text-blue-900">
+            <button
+              onClick={() => router.push('/admin/leaves')}
+              className="text-blue-600 hover:text-blue-900"
+            >
               Back to Leaves
-            </Link>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

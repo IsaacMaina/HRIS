@@ -50,25 +50,26 @@ model Session {
 }
 
 model Employee {
-  id         String         @id @default(cuid())
-  userId     String         @unique
-  staffNo    String?        @unique
-  position   String?
-  department String?
-  salary     Float
-  nhifRate   Float?
-  nssfRate   Float?
-  bankId     String?
-  bankAccNo  String?
-  createdAt  DateTime       @default(now())
-  phone      String?
-  activities Activity[]
-  documents  Document[]
-  bank       Bank?          @relation(fields: [bankId], references: [id])
-  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  leaves     LeaveRequest[]
-  payslips   Payslip[]
-  payouts    Payout[]       // Added relation for payouts
+  id            String         @id @default(cuid())
+  userId        String         @unique
+  staffNo       String?        @unique
+  position      String?
+  department    String?
+  salary        Float
+  nhifRate      Float?
+  nssfRate      Float?
+  bankId        String?
+  bankAccNo     String?
+  createdAt     DateTime       @default(now())
+  phone         String?
+  activities    Activity[]
+  documents     Document[]
+  bank          Bank?          @relation(fields: [bankId], references: [id])
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaves        LeaveRequest[]
+  leaveAllocations LeaveAllocation[]
+  payslips      Payslip[]
+  payouts       Payout[]       // Added relation for payouts
 }
 
 model Bank {
@@ -76,6 +77,20 @@ model Bank {
   name     String
   code     String?
   accounts Employee[]
+}
+
+model LeaveAllocation {
+  id                String   @id @default(cuid())
+  employeeId        String
+  year              Int      // The year the allocation is for
+  totalDays         Int      // Total allocated days for the year (e.g., 30)
+  usedDays          Int      @default(0)  // Days already used
+  remainingDays     Int      // Calculated remaining days (totalDays - usedDays)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  employee          Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, year]) // Ensure only one allocation per employee per year
 }
 
 model LeaveRequest {

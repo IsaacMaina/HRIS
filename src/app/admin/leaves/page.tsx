@@ -116,8 +116,10 @@ export default function AdminLeaves() {
       }
     };
 
-    fetchLeaveRequests();
-  }, []);
+    if (status === 'authenticated') {
+      fetchLeaveRequests();
+    }
+  }, [status]);
 
   // Apply filters and sorting
   const filteredAndSortedRequests = useMemo(() => {
@@ -199,6 +201,37 @@ export default function AdminLeaves() {
     window.location.href = `/admin/leaves/${id}`;
   };
 
+  const refreshLeaveRequests = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/leaves', {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch leave requests:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        return;
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Response is not JSON:', contentType);
+        const textResponse = await response.text();
+        console.error('Actual response content:', textResponse);
+        return;
+      }
+
+      const data = await response.json();
+      setLeaveRequests(data);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeleteLeave = async (id: string) => {
     if (confirm('Are you sure you want to delete this leave request?')) {
       try {
@@ -238,7 +271,47 @@ export default function AdminLeaves() {
       // If there are no items but current page is not 1, reset to page 1
       setCurrentPage(1);
     }
-  }, [requestsPerPage, filteredAndSortedRequests, currentPage, searchInput, statusFilter, typeFilter]);
+  }, [requestsPerPage, filteredAndSortedRequests.length]); // Only trigger when page size or total count changes
+
+  // Check for visibility change to refresh data when returning from other pages
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && status === 'authenticated') {
+        // Refresh the leave requests when the page becomes visible again
+        const fetchLeaveRequests = async () => {
+          try {
+            const response = await fetch('/api/admin/leaves', {
+              credentials: 'include',
+            });
+
+            if (!response.ok) {
+              console.error('Failed to fetch leave requests:', response.status, response.statusText);
+              return;
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              console.error('Response is not JSON:', contentType);
+              return;
+            }
+
+            const data = await response.json();
+            setLeaveRequests(data);
+          } catch (error) {
+            console.error('Error fetching leave requests:', error);
+          }
+        };
+
+        fetchLeaveRequests();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [status]);
 
   if (loading) {
     return (

@@ -25,6 +25,21 @@ export default function AdminEmployees() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState(""); // For debounced search
+  const [departmentFilter, setDepartmentFilter] = useState("All");
+  const [positionFilter, setPositionFilter] = useState("All");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [employeesPerPage, setEmployeesPerPage] = useState(10);
+  const [selectedRow, setSelectedRow] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string | null;
+    direction: "asc" | "desc";
+  }>({
+    key: null,
+    direction: "asc",
+  });
+  const [isExporting, setIsExporting] = useState(false);
+  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -71,21 +86,6 @@ export default function AdminEmployees() {
       </div>
     );
   }
-  const [departmentFilter, setDepartmentFilter] = useState("All");
-  const [positionFilter, setPositionFilter] = useState("All");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [employeesPerPage, setEmployeesPerPage] = useState(10);
-  const [selectedRow, setSelectedRow] = useState<string | null>(null);
-  const [sortConfig, setSortConfig] = useState<{
-    key: string | null;
-    direction: "asc" | "desc";
-  }>({
-    key: null,
-    direction: "asc",
-  });
-  const [isExporting, setIsExporting] = useState(false);
-  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {

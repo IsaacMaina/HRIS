@@ -30,6 +30,8 @@ interface ValidationErrors {
 export default function EmployeeLeaves() {
   const { data: session, status } = useSession();
   const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [leaveAllocation, setLeaveAllocation] = useState<any>(null);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     type: 'ANNUAL',
@@ -53,8 +55,10 @@ export default function EmployeeLeaves() {
       fetch('/api/employee/leaves')
         .then((res) => res.json())
         .then((data) => {
-          if (Array.isArray(data)) {
-            setLeaves(data);
+          if (data && Array.isArray(data.leaves)) {
+            setLeaves(data.leaves);
+            setLeaveAllocation(data.leaveAllocation);
+            setCurrentYear(data.currentYear);
             toast.success('Leave requests loaded!', { id: toastId }); // Success toast
           } else {
             toast.error('Failed to load leave requests: Invalid data format.', { id: toastId });
@@ -144,10 +148,27 @@ export default function EmployeeLeaves() {
     return result;
   }, [leaves, filterType, filterStatus, sortConfig]);
 
+  // Calculate number of leave days between start and end date (inclusive)
+  const calculateLeaveDays = (startDate: string, endDate: string): number | null => {
+    if (!startDate || !endDate) return null;
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (end < start) return null; // Invalid date range
+
+    // Calculate the time difference in milliseconds
+    const timeDiff = end.getTime() - start.getTime();
+    // Convert to days and add 1 to include both start and end dates
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+    return daysDiff;
+  };
+
   const handleFormChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
+
     // Clear error when user starts typing or selecting
     if (errors[name as keyof ValidationErrors]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
@@ -231,6 +252,25 @@ export default function EmployeeLeaves() {
             </button>
           </div>
 
+          {/* Leave Allocation Summary */}
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h2 className="text-lg font-medium text-blue-900 mb-4">Leave Allocation for {currentYear || new Date().getFullYear()}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-lg p-4 shadow">
+                <p className="text-sm text-gray-600">Total Annual Leave</p>
+                <p className="text-2xl font-bold text-blue-600">{leaveAllocation?.totalDays || 30} days</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow">
+                <p className="text-sm text-gray-600">Used Days</p>
+                <p className="text-2xl font-bold text-yellow-600">{leaveAllocation?.usedDays || 0} days</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow">
+                <p className="text-sm text-gray-600">Remaining Days</p>
+                <p className="text-2xl font-bold text-green-600">{leaveAllocation?.remainingDays || 30} days</p>
+              </div>
+            </div>
+          </div>
+
           {showForm && (
             <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
               <h2 className="text-lg font-medium text-blue-900 mb-4">Apply for Leave</h2>
@@ -304,6 +344,24 @@ export default function EmployeeLeaves() {
                     )}
                   </div>
                 </div>
+
+                {/* Display calculated leave days */}
+                {formData.startDate && formData.endDate && (
+                  <div className="mt-4 p-4 bg-blue-50 rounded-md border border-blue-200">
+                    <p className="text-sm text-blue-800">
+                      <span className="font-medium">Leave Duration:</span> {calculateLeaveDays(formData.startDate, formData.endDate)} days
+                      {formData.type === 'ANNUAL' && leaveAllocation && (
+                        <>
+                          <br />
+                          <span className="font-medium">Remaining Leave Balance:</span> {Math.max(0, (leaveAllocation.remainingDays || 30) - (calculateLeaveDays(formData.startDate, formData.endDate) || 0))} days
+                          {calculateLeaveDays(formData.startDate, formData.endDate)! > (leaveAllocation.remainingDays || 30) && (
+                            <span className="text-red-600 block mt-1">⚠️ Warning: You don't have enough leave days available!</span>
+                          )}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex items-center">
                   <button

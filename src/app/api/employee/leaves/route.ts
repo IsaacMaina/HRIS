@@ -28,7 +28,25 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(leaves, { status: 200 });
+    // Get current year's leave allocation
+    const currentYear = new Date().getFullYear();
+    const currentAllocation = await prisma.leaveAllocation.findUnique({
+      where: {
+        employeeId_year: {
+          employeeId: employee.id,
+          year: currentYear
+        }
+      }
+    });
+
+    // Include leave allocation information in the response
+    const response = {
+      leaves,
+      leaveAllocation: currentAllocation || null,
+      currentYear
+    };
+
+    return NextResponse.json(response, { status: 200 });
   } catch (error) {
     console.error('Error fetching employee leave requests:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
@@ -61,13 +79,53 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
     }
 
+    // For Annual Leave, check if there are enough available days
+    if (type === 'ANNUAL') {
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      const timeDiff = endDateObj.getTime() - startDateObj.getTime();
+      const requestedDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 to include both start and end dates
+
+      const leaveYear = startDateObj.getFullYear();
+
+      // Get or create the leave allocation for this employee and year
+      let leaveAllocation = await prisma.leaveAllocation.findUnique({
+        where: {
+          employeeId_year: {
+            employeeId: employee.id,
+            year: leaveYear
+          }
+        }
+      });
+
+      if (!leaveAllocation) {
+        // Create a new allocation if none exists for this year
+        leaveAllocation = await prisma.leaveAllocation.create({
+          data: {
+            employeeId: employee.id,
+            year: leaveYear,
+            totalDays: 30, // Default to 30 days
+            usedDays: 0,
+            remainingDays: 30
+          }
+        });
+      }
+
+      // Check if there are enough remaining days
+      if (leaveAllocation.remainingDays < requestedDays) {
+        return NextResponse.json({
+          message: `Not enough leave days available. You have ${leaveAllocation.remainingDays} days remaining, but requested ${requestedDays} days.`
+        }, { status: 400 });
+      }
+    }
+
     const newLeaveRequest = await prisma.leaveRequest.create({
       data: {
         employeeId: employee.id,
         type: type as LeaveType,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        // reason is not in the prisma model for leaveRequest
+        reason: reason || null, // Add reason field if provided, otherwise null
       },
     });
 

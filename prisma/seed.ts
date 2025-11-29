@@ -11,7 +11,14 @@ async function main() {
   await prisma.notification.deleteMany();
   await prisma.document.deleteMany();
   await prisma.payslip.deleteMany();
-  await prisma.payout.deleteMany(); // Delete payouts first (new model we added)
+  // Note: Payout table may not exist if this is a fresh database
+  // It should be added after the migrations run
+  try {
+    await prisma.payout.deleteMany();
+  } catch (error) {
+    // Table may not exist yet, which is fine
+    console.log('Payout table does not exist yet, skipping...');
+  } // Delete payouts first (new model we added)
   await prisma.leaveRequest.deleteMany();
   await prisma.activity.deleteMany();
   await prisma.employee.deleteMany();
@@ -116,16 +123,6 @@ async function main() {
   for (let i = 0; i < allUsers.length; i++) {
     const user = allUsers[i];
 
-    // Generate Safaricom sandbox test phone numbers
-    const sandboxTestNumbers = [
-      '+254700000000', // Common Safaricom test number
-      '+254711082***', // Format for Safaricom test numbers
-      '+254701111111', // Another common test number
-      '+254720123456', // Safaricom test number format
-      '+254730123456', // Aitel test number format
-      '+254707123456', // Yu test number format
-    ];
-
     // Use proper Safaricom sandbox test numbers
     // Common Safaricom test numbers for sandbox environment
     const sandboxTestNumbers = [
@@ -218,6 +215,33 @@ async function main() {
     });
   }
   console.log(`Seeded ${employees.length * 2} documents.`);
+
+  // Seed Leave Allocations (30 days per year per employee)
+  for (const employee of employees) {
+    // Create allocation for current year
+    const currentYear = new Date().getFullYear();
+    await prisma.leaveAllocation.create({
+      data: {
+        employeeId: employee.id,
+        year: currentYear,
+        totalDays: 30, // Default 30 days per year
+        usedDays: 0, // Initially 0 used days
+        remainingDays: 30, // Initially 30 remaining days
+      },
+    });
+
+    // Create allocation for previous year (to have data for both years)
+    await prisma.leaveAllocation.create({
+      data: {
+        employeeId: employee.id,
+        year: currentYear - 1,
+        totalDays: 30, // Default 30 days per year
+        usedDays: faker.number.int({ min: 0, max: 15 }), // Randomly use 0-15 days from previous year
+        remainingDays: 30 - faker.number.int({ min: 0, max: 15 }), // Remaining of the previous year
+      },
+    });
+  }
+  console.log(`Seeded leave allocations for ${employees.length * 2} employee years.`);
 
   console.log('Seeding finished.');
 }

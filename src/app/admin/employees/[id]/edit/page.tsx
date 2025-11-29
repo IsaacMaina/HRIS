@@ -32,6 +32,10 @@ interface ValidationErrors {
   department?: string;
   salary?: string;
   phone?: string;
+  bankId?: string;
+  bankAccNo?: string;
+  nhifRate?: string;
+  nssfRate?: string;
   [key: string]: string | undefined;
 }
 
@@ -170,9 +174,37 @@ export default function EditEmployeePage() {
       newErrors.salary = 'Please enter a valid salary amount';
     }
 
-    // Validate phone if provided
-    if (formData.phone && formData.phone.trim() && !/^\+?[\d\s\-\(\)]+$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
+    // Validate phone number (must start with 2547 followed by 8 digits)
+    if (formData.phone && formData.phone.trim()) {
+      // Remove any existing spaces, dashes, or parentheses for validation
+      const cleanPhone = formData.phone.replace(/[\s\-\(\)]/g, '');
+      if (!/^2547\d{8}$/.test(cleanPhone)) {
+        newErrors.phone = 'Phone number must start with 2547 followed by 8 digits (e.g., 254712345678)';
+      }
+    } else {
+      // Phone number is now required
+      newErrors.phone = 'Phone number is required and must start with 2547';
+    }
+
+    // Validate bank details (required)
+    if (!formData.bankId) {
+      newErrors.bankId = 'Bank is required';
+    }
+    if (!formData.bankAccNo) {
+      newErrors.bankAccNo = 'Bank account number is required';
+    }
+
+    // Validate deduction inputs (required)
+    if (!formData.nhifRate) {
+      newErrors.nhifRate = 'NHIF rate is required';
+    } else if (isNaN(parseFloat(formData.nhifRate)) || parseFloat(formData.nhifRate) < 0) {
+      newErrors.nhifRate = 'Please enter a valid NHIF rate';
+    }
+
+    if (!formData.nssfRate) {
+      newErrors.nssfRate = 'NSSF rate is required';
+    } else if (isNaN(parseFloat(formData.nssfRate)) || parseFloat(formData.nssfRate) < 0) {
+      newErrors.nssfRate = 'Please enter a valid NSSF rate';
     }
 
     setErrors(newErrors);
@@ -434,7 +466,9 @@ export default function EditEmployeePage() {
                         id="bankId"
                         value={formData.bankId}
                         onChange={handleChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className={`mt-1 block w-full border ${
+                          errors.bankId ? 'border-red-300 ring-red-500' : 'border-gray-300'
+                        } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                       >
                         <option value="">Select a bank</option>
                         {banks.map(bank => (
@@ -443,6 +477,9 @@ export default function EditEmployeePage() {
                           </option>
                         ))}
                       </select>
+                      {errors.bankId && (
+                        <p className="mt-1 text-sm text-red-600">{errors.bankId}</p>
+                      )}
                     </div>
 
                     <div>
@@ -455,9 +492,14 @@ export default function EditEmployeePage() {
                         id="bankAccNo"
                         value={formData.bankAccNo}
                         onChange={handleChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className={`mt-1 block w-full border ${
+                          errors.bankAccNo ? 'border-red-300 ring-red-500' : 'border-gray-300'
+                        } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                         placeholder="Enter account number"
                       />
+                      {errors.bankAccNo && (
+                        <p className="mt-1 text-sm text-red-600">{errors.bankAccNo}</p>
+                      )}
                     </div>
 
                     <div>
@@ -471,9 +513,14 @@ export default function EditEmployeePage() {
                         value={formData.nhifRate}
                         onChange={handleChange}
                         step="0.01"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className={`mt-1 block w-full border ${
+                          errors.nhifRate ? 'border-red-300 ring-red-500' : 'border-gray-300'
+                        } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                         placeholder="Enter NHIF rate"
                       />
+                      {errors.nhifRate && (
+                        <p className="mt-1 text-sm text-red-600">{errors.nhifRate}</p>
+                      )}
                     </div>
                   </div>
 
@@ -489,9 +536,14 @@ export default function EditEmployeePage() {
                         value={formData.nssfRate}
                         onChange={handleChange}
                         step="0.01"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className={`mt-1 block w-full border ${
+                          errors.nssfRate ? 'border-red-300 ring-red-500' : 'border-gray-300'
+                        } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                         placeholder="Enter NSSF rate"
                       />
+                      {errors.nssfRate && (
+                        <p className="mt-1 text-sm text-red-600">{errors.nssfRate}</p>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -95,9 +95,41 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!name || !email || !staffNo || !position || !department) {
+    if (!name || !email || !staffNo || !position || !department || !phone || !bankId || !bankAccNo || !nhifRate || !nssfRate) {
       return new Response(JSON.stringify({
-        error: 'Missing required fields: name, email, staffNo, position, department'
+        error: 'Missing required fields: name, email, staffNo, position, department, phone, bankId, bankAccNo, nhifRate, nssfRate'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate phone number format (must start with 2547 followed by 8 digits)
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    if (!/^2547\d{8}$/.test(cleanPhone)) {
+      return new Response(JSON.stringify({
+        error: 'Phone number must start with 2547 followed by 8 digits (e.g., 254712345678)'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate deduction rates
+    const nhifRateNum = parseFloat(nhifRate) || 0;
+    const nssfRateNum = parseFloat(nssfRate) || 0;
+    if (isNaN(nhifRateNum) || nhifRateNum < 0) {
+      return new Response(JSON.stringify({
+        error: 'NHIF rate must be a valid non-negative number'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (isNaN(nssfRateNum) || nssfRateNum < 0) {
+      return new Response(JSON.stringify({
+        error: 'NSSF rate must be a valid non-negative number'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },

@@ -122,12 +122,107 @@ export async function PATCH(
       });
     }
 
+    // If this is a status change from APPROVED to PENDING/REJECTED (or vice versa), adjust the leave allocation
+    if (leaveRequest.status === 'APPROVED' && newStatus.toUpperCase() !== 'APPROVED') {
+      // Previously approved leave is now pending or rejected - need to restore the days
+      const startDate = new Date(leaveRequest.startDate);
+      const endDate = new Date(leaveRequest.endDate);
+      const timeDiff = endDate.getTime() - startDate.getTime();
+      const daysToRestore = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 to include both start and end dates
+
+      // Get the year for the leave allocation
+      const leaveYear = startDate.getFullYear();
+
+      // Get the leave allocation for this employee and year
+      const leaveAllocation = await prisma.leaveAllocation.findUnique({
+        where: {
+          employeeId_year: {
+            employeeId: leaveRequest.employeeId,
+            year: leaveYear
+          }
+        }
+      });
+
+      if (leaveAllocation) {
+        // Restore the days to the allocation
+        await prisma.leaveAllocation.update({
+          where: {
+            employeeId_year: {
+              employeeId: leaveRequest.employeeId,
+              year: leaveYear
+            }
+          },
+          data: {
+            usedDays: {
+              decrement: daysToRestore
+            },
+            remainingDays: {
+              increment: daysToRestore
+            }
+          }
+        });
+      }
+    } else if (leaveRequest.status !== 'APPROVED' && newStatus.toUpperCase() === 'APPROVED') {
+      // Previously not approved leave is now approved - need to deduct the days
+      const startDate = new Date(leaveRequest.startDate);
+      const endDate = new Date(leaveRequest.endDate);
+      const timeDiff = endDate.getTime() - startDate.getTime();
+      const daysToDeduct = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 to include both start and end dates
+
+      // Get the year for the leave allocation
+      const leaveYear = startDate.getFullYear();
+
+      // Get or create the leave allocation for this employee and year
+      let leaveAllocation = await prisma.leaveAllocation.findUnique({
+        where: {
+          employeeId_year: {
+            employeeId: leaveRequest.employeeId,
+            year: leaveYear
+          }
+        }
+      });
+
+      if (!leaveAllocation) {
+        // Create a new allocation if none exists for this year
+        leaveAllocation = await prisma.leaveAllocation.create({
+          data: {
+            employeeId: leaveRequest.employeeId,
+            year: leaveYear,
+            totalDays: 30, // Default to 30 days
+            usedDays: 0,
+            remainingDays: 30
+          }
+        });
+      }
+
+      // Deduct the days from the allocation
+      await prisma.leaveAllocation.update({
+        where: {
+          employeeId_year: {
+            employeeId: leaveRequest.employeeId,
+            year: leaveYear
+          }
+        },
+        data: {
+          usedDays: {
+            increment: daysToDeduct
+          },
+          remainingDays: {
+            decrement: daysToDeduct
+          }
+        }
+      });
+    }
+
     // Update the leave request status
     const updatedLeaveRequest = await prisma.leaveRequest.update({
       where: { id },
       data: {
         status: newStatus.toUpperCase() as any, // Convert to uppercase to match enum
       },
+      include: {
+        employee: true
+      }
     });
 
     // Log the activity
